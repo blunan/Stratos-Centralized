@@ -1,0 +1,41 @@
+#!/bin/bash
+
+if [ -d ~/Desktop/ns-3 ]
+then
+	cd ~/Desktop/ns-3
+else
+	cd ~/ns-3
+fi
+
+if [ -d centralizado ]
+then
+	rm centralizado/*.txt
+else
+	mkdir centralizado
+fi
+
+for i in {1..50}
+do
+	./waf --run "centralizado --nMobile=0" >> centralizado/mobile_0.txt
+	./waf --run "centralizado --nMobile=25" >> centralizado/mobile_25.txt
+	./waf --run "centralizado --nMobile=50" >> centralizado/mobile_50.txt
+	./waf --run "centralizado --nMobile=100" >> centralizado/mobile_100.txt
+
+	./waf --run "centralizado --nRequesters=1" >> centralizado/requesters_1.txt
+	./waf --run "centralizado --nRequesters=2" >> centralizado/requesters_2.txt
+	./waf --run "centralizado --nRequesters=4" >> centralizado/requesters_4.txt
+	./waf --run "centralizado --nRequesters=8" >> centralizado/requesters_8.txt
+	./waf --run "centralizado --nRequesters=16" >> centralizado/requesters_16.txt
+	./waf --run "centralizado --nRequesters=24" >> centralizado/requesters_24.txt
+	./waf --run "centralizado --nRequesters=32" >> centralizado/requesters_32.txt
+
+	./waf --run "centralizado --nServices=1" >> centralizado/services_1.txt
+	./waf --run "centralizado --nServices=2" >> centralizado/services_2.txt
+	./waf --run "centralizado --nServices=4" >> centralizado/services_4.txt
+	./waf --run "centralizado --nServices=8" >> centralizado/services_8.txt
+
+	./waf --run "centralizado --nPackets=1" >> centralizado/packets_1.txt
+	./waf --run "centralizado --nPackets=10" >> centralizado/packets_10.txt
+	./waf --run "centralizado --nPackets=20" >> centralizado/packets_20.txt
+	./waf --run "centralizado --nPackets=40" >> centralizado/packets_40.txt
+done
