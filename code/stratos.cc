@@ -15,43 +15,51 @@
 #include "results-application.h"
 #include "ontology-application.h"
 #include "position-application.h"
+#include "schedule-application.h"
+
+NS_LOG_COMPONENT_DEFINE("Stratos");
 
 Stratos::Stratos(int argc, char *argv[]) {
+	NS_LOG_FUNCTION(this);
 	NUMBER_OF_MOBILE_NODES = 50; //0, 25, 50*, 100
 	NUMBER_OF_REQUESTER_NODES = 4; //1, 2, 4*, 8, 16, 24, 32
-	NUMBER_OF_PACKETS_TO_SEND = 10; //1, 10*, 20, 40
+	NUMBER_OF_PACKETS_TO_SEND = 10; //10*, 20, 40, 60
 	NUMBER_OF_SERVICES_OFFERED = 2; //1, 2*, 4, 8
 
+	NS_LOG_INFO("Parsing argument values if any");
 	CommandLine cmd;
 	cmd.AddValue("nMobile", "Number of mobile nodes.", NUMBER_OF_MOBILE_NODES);
 	cmd.AddValue("nRequesters", "Number of requester nodes.", NUMBER_OF_REQUESTER_NODES);
 	cmd.AddValue("nPackets", "Number of service packets to send.", NUMBER_OF_PACKETS_TO_SEND);
 	cmd.AddValue("nServices", "Number of services offered by a node.", NUMBER_OF_SERVICES_OFFERED);
 	cmd.Parse(argc, argv);
+	NS_LOG_INFO("Number of mobile nodes = " << NUMBER_OF_MOBILE_NODES);
+	NS_LOG_INFO("Number of requester nodes = " << NUMBER_OF_REQUESTER_NODES);
+	NS_LOG_INFO("Number of service packets to send = " << NUMBER_OF_PACKETS_TO_SEND);
+	NS_LOG_INFO("Number of services offered by a node = " << NUMBER_OF_SERVICES_OFFERED);
+
 	SeedManager::SetSeed(time(NULL));
+	NS_LOG_INFO("Random seed seted to current time");
 }
 
 void Stratos::Run() {
-	//std::cout << "Starting simulation for " << TOTAL_SIMULATION_TIME << " seconds ...\n";
-	//std::cout << "Testing for " << NUMBER_OF_REQUESTER_NODES << " requester nodes.\n";
-	//std::cout << "Each node offers " << NUMBER_OF_SERVICES_OFFERED << " services.\n";
-	//std::cout << "A service sends " << NUMBER_OF_PACKETS_TO_SEND << " packages.\n\n";
+	NS_LOG_FUNCTION(this);
 	std::map<int, int> nodos;
 	for(; nodos.size() < (uint) NUMBER_OF_REQUESTER_NODES;) {
 		int nodo = Utilities::Random(1, TOTAL_NUMBER_OF_NODES - 1);
 		nodos[nodo] = nodo;
 	}
-	Ptr<ResultsApplication> app;
 	Ptr<SearchApplication> searchApp;
-	Ptr<ResultsApplication> requester;
+	Ptr<ResultsApplication> resultsApp;
+	Ptr<ResultsApplication> requesterResultsApp;
 	for(std::map<int, int>::iterator i = nodos.begin(); i != nodos.end(); i++) {
 		double requestTime = Utilities::Random(2, MAX_REQUEST_TIME);
 		searchApp = DynamicCast<SearchApplication>(wifiNodes.Get(i->first)->GetApplication(2));
-		requester = DynamicCast<ResultsApplication>(wifiNodes.Get(i->first)->GetApplication(4));
+		requesterResultsApp = DynamicCast<ResultsApplication>(wifiNodes.Get(i->first)->GetApplication(4));
 		Simulator::Schedule(Seconds(requestTime), &SearchApplication::CreateAndSendRequest, searchApp);
 		for(int j = 1; j < TOTAL_NUMBER_OF_NODES; j++) {
-			app = DynamicCast<ResultsApplication>(wifiNodes.Get(j)->GetApplication(4));
-			Simulator::Schedule(Seconds(requestTime), &ResultsApplication::EvaluateNode, app, requester);
+			resultsApp = DynamicCast<ResultsApplication>(wifiNodes.Get(j)->GetApplication(4));
+			Simulator::Schedule(Seconds(requestTime), &ResultsApplication::EvaluateNode, resultsApp, requesterResultsApp);
 		}
 	}
 	Ptr<FlowMonitor> flowMonitor;
@@ -69,14 +77,15 @@ void Stratos::Run() {
 }
 
 void Stratos::CreateNodes() {
-	CreateStaticNodes();
+	NS_LOG_FUNCTION(this);
 	CreateMobileNodes();
-	wifiNodes.Add(staticNodes);
+	CreateStaticNodes();
 	wifiNodes.Add(mobileNodes);
+	wifiNodes.Add(staticNodes);
 }
 
 void Stratos::CreateDevices() {
-	//std::cout << "Creating " << TOTAL_NUMBER_OF_NODES << " devices.\n";
+	NS_LOG_FUNCTION(this);
 	YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default();
 	YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default();
 	wifiPhy.SetChannel(wifiChannel.Create());
@@ -87,9 +96,9 @@ void Stratos::CreateDevices() {
 }
 
 void Stratos::InstallInternetStack() {
-	//std::cout << "Installing the Internet Stack to nodes.\n";
-	AodvHelper aodv;
+	NS_LOG_FUNCTION(this);
 	InternetStackHelper internetStack;
+	AodvHelper aodv;
 	internetStack.SetRoutingHelper(aodv);
 	internetStack.Install(wifiNodes);
 	Ipv4AddressHelper addressHelper;
@@ -98,7 +107,7 @@ void Stratos::InstallInternetStack() {
 }
 
 void Stratos::InstallApplications() {
-	//std::cout << "Installing Applications to nodes.\n";
+	NS_LOG_FUNCTION(this);
 	Ptr<Node> centralNode = wifiNodes.Get(0);
 	NodeContainer nodes;
 	for(int i = 1; i < TOTAL_NUMBER_OF_NODES; i++) {
@@ -120,20 +129,23 @@ void Stratos::InstallApplications() {
 	applications.Add(results.Install(nodes));
 	CentralHelper central;
 	applications.Add(central.Install(centralNode));
+	ScheduleHelper schedule;
+	applications.Add(schedule.Install(nodes));
 	applications.Start(Seconds(1));
 	applications.Stop(Seconds(TOTAL_SIMULATION_TIME - 1));
 }
 
 void Stratos::CreateMobileNodes() {
-	int nNodes;
+	NS_LOG_FUNCTION(this);
+	int nMobileNodes;
 	if(NUMBER_OF_MOBILE_NODES == TOTAL_NUMBER_OF_NODES) {
-		nNodes = TOTAL_NUMBER_OF_NODES - 1;
+		nMobileNodes = TOTAL_NUMBER_OF_NODES - 1;
 	} else {
-		nNodes = NUMBER_OF_MOBILE_NODES;
+		nMobileNodes = NUMBER_OF_MOBILE_NODES;
 	}
-	//std::cout << "Creating " << nNodes << " mobile nodes.\n";
-	mobileNodes.Create(nNodes);
-	for(int i = 0; i < nNodes; ++i) {
+	NS_LOG_DEBUG("Creating " << nMobileNodes << " mobile nodes")
+	mobileNodes.Create(nMobileNodes);
+	for(int i = 0; i < nMobileNodes; ++i) {
 		std::ostringstream name;
 		name << "Mobile Node - " << i;
 		Names::Add(name.str(), mobileNodes.Get(i));
@@ -149,15 +161,16 @@ void Stratos::CreateMobileNodes() {
 }
 
 void Stratos::CreateStaticNodes() {
-	int nNodes;
+	NS_LOG_FUNCTION(this);
+	int nStaticNodes;
 	if(NUMBER_OF_MOBILE_NODES == TOTAL_NUMBER_OF_NODES) {
-		nNodes = 1;
+		nStaticNodes = 1;
 	} else {
-		nNodes = TOTAL_NUMBER_OF_NODES - NUMBER_OF_MOBILE_NODES;
+		nStaticNodes = TOTAL_NUMBER_OF_NODES - NUMBER_OF_MOBILE_NODES;
 	}
-	//std::cout << "Creating " << nNodes << " static nodes.\n";
-	staticNodes.Create(nNodes);
-	for(int i = 0; i < nNodes; ++i) {
+	NS_LOG_DEBUG("Creating " << nStaticNodes << " static nodes")
+	staticNodes.Create(nStaticNodes);
+	for(int i = 0; i < nStaticNodes; ++i) {
 		std::ostringstream name;
 		name << "Static Node - " << i;
 		Names::Add(name.str(), staticNodes.Get(i));
@@ -170,6 +183,7 @@ void Stratos::CreateStaticNodes() {
 }
 
 Ptr<PositionAllocator> Stratos::GetPositionAllocator() {
+	NS_LOG_FUNCTION(this);
 	Ptr<UniformRandomVariable> random = CreateObject<UniformRandomVariable>();
 	random->SetAttribute("Min", DoubleValue(0));
 	random->SetAttribute("Max", DoubleValue(MAX_DISTANCE));
