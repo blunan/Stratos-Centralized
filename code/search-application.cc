@@ -160,6 +160,7 @@ void SearchApplication::RetryRequest(Ptr<Packet> packet, int nTry, std::pair<uin
 	if (nTry <= MAX_TRIES) {
 		NS_LOG_DEBUG(localAddress << " -> Retrying request (" << nTry << ")");
 		Simulator::Schedule(Seconds(Utilities::GetJitter()), &SearchApplication::SendUnicastMessage, this, packet, centralServerAddress);
+		NS_LOG_DEBUG(localAddress << " -> Schedule next retry");
 		timers[key] = Simulator::Schedule(Seconds(MAX_RESPONSE_WAIT_TIME + Utilities::GetJitter()), &SearchApplication::RetryRequest, this, packet, ++nTry, key);
 	}
 }
