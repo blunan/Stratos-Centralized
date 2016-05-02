@@ -11,6 +11,8 @@
 
 using namespace ns3;
 
+class ScheduleApplication;
+
 class ServiceApplication : public Application {
 
 	public:
@@ -28,34 +30,34 @@ class ServiceApplication : public Application {
 		virtual void StopApplication();
 
 	public:
-		void CreateAndSendRequest(Ipv4Address destinationAddress, std::string service);
+		int NUMBER_OF_PACKETS_TO_SEND;
+		void CreateAndSendRequest(Ipv4Address destinationAddress, std::string service, int packets);
 
 	private:
 		Ptr<Socket> socket;
 		Ipv4Address localAddress;
-		int NUMBER_OF_PACKETS_TO_SEND;
 		Ptr<ResultsApplication> resultsManager;
 		Ptr<OntologyApplication> ontologyManager;
 		std::map<std::pair<uint, std::string>, Flag> status;
 		std::map<std::pair<uint, std::string>, int> packets;
+		std::map<std::pair<uint, std::string>, int> maxPackets;
 		std::map<std::pair<uint, std::string>, EventId> timers;
 		std::map<std::pair<uint, std::string>, EventId> resends;
-		
+
 		void ReceiveMessage(Ptr<Socket> socket);
-		bool DoIProvideService(std::string service);
 		void CancelService(std::pair<uint, std::string> key);
 		void SendUnicastMessage(Ptr<Packet> packet, uint destinationAddress);
 		std::pair<uint, std::string> GetSenderKey(ServiceErrorHeader errorHeader);
 		std::pair<uint, std::string> GetSenderKey(ServiceRequestResponseHeader requestResponse);
 		std::pair<uint, std::string> GetDestinationKey(ServiceRequestResponseHeader requestResponse);
 		void Retry(Ptr<Packet> packet, int nTry, std::pair<uint, std::string> key, uint destinationAddress);
-		
+
 		void ReceiveRequest(Ptr<Packet> packet);
 		void SendRequest(ServiceRequestResponseHeader requestHeader);
 		void CreateAndSendRequest(ServiceRequestResponseHeader response, Flag flag);
 		ServiceRequestResponseHeader CreateRequest(ServiceRequestResponseHeader response, Flag flag);
 		ServiceRequestResponseHeader CreateRequest(Ipv4Address destinationAddress, std::string service);
-		
+
 		void ReceiveError(Ptr<Packet> packet);
 		void SendError(ServiceErrorHeader errorHeader);
 		void CreateAndSendError(ServiceRequestResponseHeader requestResponse);
