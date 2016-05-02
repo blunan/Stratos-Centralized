@@ -36,6 +36,7 @@ void SearchApplication::DoInitialize() {
 	resultsManager = DynamicCast<ResultsApplication>(GetNode()->GetApplication(4));
 	ontologyManager = DynamicCast<OntologyApplication>(GetNode()->GetApplication(0));
 	positionManager = DynamicCast<PositionApplication>(GetNode()->GetApplication(1));
+	scheduleManager = DynamicCast<ScheduleApplication>(GetNode()->GetApplication(6));
 	socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 	socket->SetAllowBroadcast(false);
 	localAddress = GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();

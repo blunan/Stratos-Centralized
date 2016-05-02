@@ -38,6 +38,7 @@ class ServiceApplication : public Application {
 		Ipv4Address localAddress;
 		Ptr<ResultsApplication> resultsManager;
 		Ptr<OntologyApplication> ontologyManager;
+		Ptr<ScheduleApplication> scheduleManager;
 		std::map<std::pair<uint, std::string>, Flag> status;
 		std::map<std::pair<uint, std::string>, int> packets;
 		std::map<std::pair<uint, std::string>, int> maxPackets;
