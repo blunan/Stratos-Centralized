@@ -79,14 +79,9 @@ SearchResponseHeader SearchApplication::SelectBestResponse(std::list<SearchRespo
 			bestResponse = response;
 			NS_LOG_DEBUG("New best response selected by semantic distance: " << bestResponse);
 		} else if(response.GetOfferedService().semanticDistance == bestResponse.GetOfferedService().semanticDistance) {
-			if(response.GetDistance() < bestResponse.GetDistance()) {
+			if(response.GetResponseAddress() < bestResponse.GetResponseAddress()) {
 				bestResponse = response;
-				NS_LOG_DEBUG("New best response selected by hop distance: " << bestResponse);
-			} else if(response.GetDistance() == bestResponse.GetDistance()) {
-				if(response.GetResponseAddress() < bestResponse.GetResponseAddress()) {
-					bestResponse = response;
-					NS_LOG_DEBUG("New best response selected by address: " << bestResponse);
-				}
+				NS_LOG_DEBUG("New best response selected by address: " << bestResponse);
 			}
 		}
 	}
