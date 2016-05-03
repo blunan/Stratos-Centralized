@@ -36,7 +36,7 @@ void SearchApplication::DoInitialize() {
 	resultsManager = DynamicCast<ResultsApplication>(GetNode()->GetApplication(4));
 	ontologyManager = DynamicCast<OntologyApplication>(GetNode()->GetApplication(0));
 	positionManager = DynamicCast<PositionApplication>(GetNode()->GetApplication(1));
-	scheduleManager = DynamicCast<ScheduleApplication>(GetNode()->GetApplication(6));
+	scheduleManager = DynamicCast<ScheduleApplication>(GetNode()->GetApplication(5));
 	socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 	socket->SetAllowBroadcast(false);
 	localAddress = GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
@@ -64,6 +64,33 @@ void SearchApplication::StopApplication() {
 	if(socket != NULL) {
 		socket->SetRecvCallback(MakeNullCallback<void, Ptr<Socket> >());
 	}
+}
+
+SearchResponseHeader SearchApplication::SelectBestResponse(std::list<SearchResponseHeader> responses) {
+	NS_LOG_FUNCTION(&responses);
+	SearchResponseHeader response;
+	SearchResponseHeader bestResponse = responses.front();
+	responses.pop_front();
+	std::list<SearchResponseHeader>::iterator i;
+	NS_LOG_DEBUG("Best response is: " << bestResponse);
+	for(i = responses.begin(); i != responses.end(); i++) {
+		response = *i;
+		if(response.GetOfferedService().semanticDistance < bestResponse.GetOfferedService().semanticDistance) {
+			bestResponse = response;
+			NS_LOG_DEBUG("New best response selected by semantic distance: " << bestResponse);
+		} else if(response.GetOfferedService().semanticDistance == bestResponse.GetOfferedService().semanticDistance) {
+			if(response.GetDistance() < bestResponse.GetDistance()) {
+				bestResponse = response;
+				NS_LOG_DEBUG("New best response selected by hop distance: " << bestResponse);
+			} else if(response.GetDistance() == bestResponse.GetDistance()) {
+				if(response.GetResponseAddress() < bestResponse.GetResponseAddress()) {
+					bestResponse = response;
+					NS_LOG_DEBUG("New best response selected by address: " << bestResponse);
+				}
+			}
+		}
+	}
+	return bestResponse;
 }
 
 void SearchApplication::CreateAndSendRequest() {
@@ -145,7 +172,7 @@ void SearchApplication::ReceiveError(Ptr<Packet> packet) {
 	SearchErrorHeader errorHeader;
 	packet->RemoveHeader(errorHeader);
 	Simulator::Cancel(timers[GetRequestKey(errorHeader)]);
-	NS_LOG_DEBUG(localAddress << " -> There is no response for request: " <<  << errorHeader);
+	NS_LOG_DEBUG(localAddress << " -> There is no response for request: " << errorHeader);
 }
 
 std::pair<uint, double> SearchApplication::GetRequestKey(SearchErrorHeader error) {
@@ -205,9 +232,11 @@ SearchNotificationHeader SearchApplication::CreateNotification() {
 
 void SearchApplication::SendNotification(SearchNotificationHeader notificationHeader) {
 	NS_LOG_FUNCTION(this << notificationHeader);
+	Ptr<Packet> packet = Create<Packet>();
 	packet->AddHeader(notificationHeader);
 	TypeHeader typeHeader(STRATOS_SEARCH_NOTIFICATION);
 	NS_LOG_DEBUG(localAddress << " -> Schedule notification to send");
+	packet->AddHeader(typeHeader);
 	Simulator::Schedule(Seconds(Utilities::GetJitter()), &SearchApplication::SendUnicastMessage, this, packet, centralServerAddress);
 	NS_LOG_DEBUG(localAddress << " -> Schedule next notification");
 	Simulator::Schedule(Seconds(HELLO_TIME + Utilities::Random(0, HELLO_TIME)), &SearchApplication::SendNotification, this, notificationHeader);

@@ -17,7 +17,7 @@ class ScheduleApplication : public Application {
 
 	public:
 		static TypeId GetTypeId();
-		
+
 		ScheduleApplication();
 		~ScheduleApplication();
 

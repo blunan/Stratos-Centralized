@@ -143,7 +143,7 @@ void Stratos::CreateMobileNodes() {
 	} else {
 		nMobileNodes = NUMBER_OF_MOBILE_NODES;
 	}
-	NS_LOG_DEBUG("Creating " << nMobileNodes << " mobile nodes")
+	NS_LOG_DEBUG("Creating " << nMobileNodes << " mobile nodes");
 	mobileNodes.Create(nMobileNodes);
 	for(int i = 0; i < nMobileNodes; ++i) {
 		std::ostringstream name;
@@ -168,7 +168,7 @@ void Stratos::CreateStaticNodes() {
 	} else {
 		nStaticNodes = TOTAL_NUMBER_OF_NODES - NUMBER_OF_MOBILE_NODES;
 	}
-	NS_LOG_DEBUG("Creating " << nStaticNodes << " static nodes")
+	NS_LOG_DEBUG("Creating " << nStaticNodes << " static nodes");
 	staticNodes.Create(nStaticNodes);
 	for(int i = 0; i < nStaticNodes; ++i) {
 		std::ostringstream name;

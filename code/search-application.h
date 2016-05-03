@@ -35,6 +35,8 @@ class SearchApplication : public Application {
 		virtual void StopApplication();
 
 	public:
+		static SearchResponseHeader SelectBestResponse(std::list<SearchResponseHeader> responses);
+
 		void CreateAndSendRequest();
 
 	private:
