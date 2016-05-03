@@ -100,7 +100,7 @@ void ServiceApplication::ReceiveMessage(Ptr<Socket> socket) {
 
 void ServiceApplication::CancelService(std::pair<uint, std::string> key) {
 	NS_LOG_FUNCTION(this << &key);
-	status[key] = STRATOS_SERVICE_STOPPED; //STRATOS_NULL;
+	status[key] = STRATOS_SERVICE_STOPPED;
 	NS_LOG_DEBUG(localAddress << " -> Service for " << key.first << " is in state " << STRATOS_SERVICE_STOPPED);
 	scheduleManager->ContinueSchedule();
 }
@@ -347,7 +347,7 @@ void ServiceApplication::SendResponse(ServiceRequestResponseHeader responseHeade
 	NS_LOG_DEBUG(localAddress << " -> Schedule next retry");
 	resends[key] = Simulator::Schedule(Seconds(MAX_RESPONSE_WAIT_TIME), &ServiceApplication::Retry, this, packet, 1, key, responseHeader.GetDestinationAddress().Get());
 	NS_LOG_DEBUG(localAddress << " -> Setting up cancel timer");
-	timers[key)] = Simulator::Schedule(Seconds(MAX_RESPONSE_WAIT_TIME * (MAX_TRIES + 1)), &ServiceApplication::CancelService, this, key);
+	timers[key] = Simulator::Schedule(Seconds(MAX_RESPONSE_WAIT_TIME * (MAX_TRIES + 1)), &ServiceApplication::CancelService, this, key);
 }
 
 void ServiceApplication::CreateAndSendResponse(ServiceRequestResponseHeader request, Flag flag) {
