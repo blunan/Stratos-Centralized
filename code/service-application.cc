@@ -33,7 +33,6 @@ void ServiceApplication::DoInitialize() {
 	NS_LOG_FUNCTION(this);
 	resultsManager = DynamicCast<ResultsApplication>(GetNode()->GetApplication(4));
 	ontologyManager = DynamicCast<OntologyApplication>(GetNode()->GetApplication(0));
-	scheduleManager = DynamicCast<ScheduleApplication>(GetNode()->GetApplication(6));
 	localAddress = GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
 	socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 	socket->SetAllowBroadcast(false);
@@ -98,11 +97,19 @@ void ServiceApplication::ReceiveMessage(Ptr<Socket> socket) {
 	}
 }
 
+void ServiceApplication::SetCallback(Callback<void> continueScheduleCallback) {
+	this->continueScheduleCallback = continueScheduleCallback;
+}
+
 void ServiceApplication::CancelService(std::pair<uint, std::string> key) {
 	NS_LOG_FUNCTION(this << &key);
 	status[key] = STRATOS_SERVICE_STOPPED;
 	NS_LOG_DEBUG(localAddress << " -> Service for " << key.first << " is in state " << STRATOS_SERVICE_STOPPED);
-	scheduleManager->ContinueSchedule();
+	if(continueScheduleCallback.IsNull()) {
+		NS_LOG_ERROR(localAddress << " -> Schedule Callback must not be null!");
+		return;
+	}
+	continueScheduleCallback();
 }
 
 void ServiceApplication::SendUnicastMessage(Ptr<Packet> packet, uint destinationAddress) {

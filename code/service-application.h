@@ -11,8 +11,6 @@
 
 using namespace ns3;
 
-class ScheduleApplication;
-
 class ServiceApplication : public Application {
 
 	public:
@@ -31,14 +29,15 @@ class ServiceApplication : public Application {
 
 	public:
 		int NUMBER_OF_PACKETS_TO_SEND;
+		void SetCallback(Callback<void> continueScheduleCallback);
 		void CreateAndSendRequest(Ipv4Address destinationAddress, std::string service, int packets);
 
 	private:
 		Ptr<Socket> socket;
 		Ipv4Address localAddress;
 		Ptr<ResultsApplication> resultsManager;
+		Callback<void> continueScheduleCallback;
 		Ptr<OntologyApplication> ontologyManager;
-		Ptr<ScheduleApplication> scheduleManager;
 		std::map<std::pair<uint, std::string>, Flag> status;
 		std::map<std::pair<uint, std::string>, int> packets;
 		std::map<std::pair<uint, std::string>, int> maxPackets;
