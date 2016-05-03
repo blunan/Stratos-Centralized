@@ -197,7 +197,9 @@ void SearchApplication::ReceiveResponse(Ptr<Packet> packet) {
 	if(!response) {
 		response = true;
 		NS_LOG_DEBUG(localAddress << " -> Starting service for request");
-		serviceManager->CreateAndSendRequest(responseHeader.GetResponseAddress(), responseHeader.GetOfferedService().service);
+		std::list<SearchResponseHeader> responses;
+		responses.push_back(responseHeader);
+		scheduleManager->CreateAndExecuteSchedule(responses);
 		resultsManager->SetResponseSemanticDistance(responseHeader.GetOfferedService().semanticDistance);
 	}
 }
