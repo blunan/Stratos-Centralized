@@ -221,24 +221,24 @@ void SearchApplication::CreateAndSendNotification() {
 }
 
 SearchNotificationHeader SearchApplication::CreateNotification() {
-	NS_LOG_FUNCTION(this);
+	//NS_LOG_FUNCTION(this);
 	SearchNotificationHeader notification;
 	notification.SetNodeAddress(localAddress);
 	notification.SetCurrentPosition(positionManager->GetCurrentPosition());
 	notification.SetOfferedServices(ontologyManager->GetOfferedServices());
-	NS_LOG_DEBUG(localAddress << " -> Notification created: " << notification);
+	//NS_LOG_DEBUG(localAddress << " -> Notification created: " << notification);
 	return notification;
 }
 
 void SearchApplication::SendNotification(SearchNotificationHeader notificationHeader) {
-	NS_LOG_FUNCTION(this << notificationHeader);
+	//NS_LOG_FUNCTION(this << notificationHeader);
 	Ptr<Packet> packet = Create<Packet>();
 	packet->AddHeader(notificationHeader);
 	TypeHeader typeHeader(STRATOS_SEARCH_NOTIFICATION);
-	NS_LOG_DEBUG(localAddress << " -> Schedule notification to send");
 	packet->AddHeader(typeHeader);
+	//NS_LOG_DEBUG(localAddress << " -> Schedule notification to send");
 	Simulator::Schedule(Seconds(Utilities::GetJitter()), &SearchApplication::SendUnicastMessage, this, packet, centralServerAddress);
-	NS_LOG_DEBUG(localAddress << " -> Schedule next notification");
+	//NS_LOG_DEBUG(localAddress << " -> Schedule next notification");
 	Simulator::Schedule(Seconds(HELLO_TIME + Utilities::Random(0, HELLO_TIME)), &SearchApplication::SendNotification, this, notificationHeader);
 }
 
