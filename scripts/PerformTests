@@ -18,10 +18,10 @@ fi
 export NS_LOG=
 
 #Search, Schedule and Service apps logging
-#export NS_LOG="SearchApplication=*|prefix_func:ServiceApplication=*|prefix_func:ScheduleApplication=*|prefix_func"
+#export NS_LOG="SearchApplication=*|prefix_func:ServiceApplication=*|prefix_func:CentralApplication=*|prefix_func:ScheduleApplication=*|prefix_func"
 
 #Full Stratos logging
-#export NS_LOG="SearchApplication:ServiceApplication:ScheduleApplication:NeighborhoodApplication:OntologyApplication:PositionApplication:ResultsApplication:RouteApplication:Stratos"
+#export NS_LOG="SearchApplication:ServiceApplication:CentralApplication:ScheduleApplication:OntologyApplication:PositionApplication:ResultsApplication:RouteApplication:Stratos"
 
 # Configure and complite first the program to avoid counting compilation time as running time
 ./waf clean
