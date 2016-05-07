@@ -5,9 +5,12 @@
 #include "utilities.h"
 #include "type-header.h"
 
+NS_LOG_COMPONENT_DEFINE("CentralApplication");
+
 NS_OBJECT_ENSURE_REGISTERED(CentralApplication);
 
 TypeId CentralApplication::GetTypeId() {
+	NS_LOG_FUNCTION_NOARGS();
 	static TypeId typeId = TypeId("CentralApplication")
 		.SetParent<Application>()
 		.AddConstructor<CentralApplication>();
@@ -15,24 +18,27 @@ TypeId CentralApplication::GetTypeId() {
 }
 
 CentralApplication::CentralApplication() {
+	NS_LOG_FUNCTION(this);
 }
 
 CentralApplication::~CentralApplication() {
+	NS_LOG_FUNCTION(this);
 }
 
 void CentralApplication::DoInitialize() {
+	NS_LOG_FUNCTION(this);
 	pthread_mutex_init(&mutex, NULL);
 	ontologyManager = DynamicCast<OntologyApplication>(GetNode()->GetApplication(0));
 	positionManager = DynamicCast<PositionApplication>(GetNode()->GetApplication(1));
 	socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 	socket->SetAllowBroadcast(false);
-	//InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), SEARCH_PORT);
 	InetSocketAddress local = InetSocketAddress(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal(), SEARCH_PORT);
 	socket->Bind(local);
 	Application::DoInitialize();
 }
 
 void CentralApplication::DoDispose() {
+	NS_LOG_FUNCTION(this);
 	if(socket != NULL) {
 		socket->Close();
 	}
@@ -41,22 +47,28 @@ void CentralApplication::DoDispose() {
 }
 
 void CentralApplication::StartApplication() {
+	NS_LOG_FUNCTION(this);
 	socket->SetRecvCallback(MakeCallback(&CentralApplication::ReceiveMessage, this));
 }
 
 void CentralApplication::StopApplication() {
+	NS_LOG_FUNCTION(this);
 	if(socket != NULL) {
 		socket->SetRecvCallback(MakeNullCallback<void, Ptr<Socket> >());
 	}
 }
 
 void CentralApplication::ReceiveMessage(Ptr<Socket> socket) {
+	NS_LOG_FUNCTION(this << socket);
 	Ptr<Packet> packet = socket->Recv();
 	TypeHeader typeHeader;
 	packet->RemoveHeader(typeHeader);
 	if(!typeHeader.IsValid()) {
+		NS_LOG_DEBUG(typeHeader);
+		NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Received search message is invalid");
 		return;
 	}
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Processing search message");
 	switch(typeHeader.GetType()) {
 		case STRATOS_SEARCH_NOTIFICATION:
 			ReceiveNotification(packet);
@@ -65,20 +77,23 @@ void CentralApplication::ReceiveMessage(Ptr<Socket> socket) {
 			ReceiveRequest(packet);
 			break;
 		default:
+			NS_LOG_WARN(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Serach message is unknown!");
 			break;
 	}
 }
 
 void CentralApplication::SendUnicastMessage(Ptr<Packet> packet, uint destinationAddress) {
+	NS_LOG_FUNCTION(this << packet << destinationAddress);
 	InetSocketAddress remote = InetSocketAddress(Ipv4Address(destinationAddress), SEARCH_PORT);
 	socket->Connect(remote);
 	socket->Send(packet);
 }
 
 void CentralApplication::ReceiveRequest(Ptr<Packet> packet) {
+	NS_LOG_FUNCTION(this << packet);
 	SearchRequestHeader requestHeader;
 	packet->RemoveHeader(requestHeader);
-	//std::cout << "ReceiveRequest :: " << requestHeader << std::endl;
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Received request: " << requestHeader);
 	std::list<uint> nodes = FilterNodesByDistance(requestHeader);
 	if(nodes.size() <= 0) {
 		CreateAndSendError(requestHeader);
