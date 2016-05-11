@@ -1,4 +1,6 @@
 #include "central-application.h"
+#include "position-application.h"
+#include "ontology-application.h"
 
 #include <limits>
 
@@ -28,8 +30,6 @@ CentralApplication::~CentralApplication() {
 void CentralApplication::DoInitialize() {
 	NS_LOG_FUNCTION(this);
 	pthread_mutex_init(&mutex, NULL);
-	ontologyManager = DynamicCast<OntologyApplication>(GetNode()->GetApplication(0));
-	positionManager = DynamicCast<PositionApplication>(GetNode()->GetApplication(1));
 	socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 	socket->SetAllowBroadcast(false);
 	InetSocketAddress local = InetSocketAddress(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal(), SEARCH_PORT);
@@ -64,7 +64,6 @@ void CentralApplication::ReceiveMessage(Ptr<Socket> socket) {
 	TypeHeader typeHeader;
 	packet->RemoveHeader(typeHeader);
 	if(!typeHeader.IsValid()) {
-		NS_LOG_DEBUG(typeHeader);
 		NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Received search message is invalid");
 		return;
 	}
@@ -96,6 +95,7 @@ void CentralApplication::ReceiveRequest(Ptr<Packet> packet) {
 	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Received request: " << requestHeader);
 	std::list<uint> nodes = FilterNodesByDistance(requestHeader);
 	if(nodes.size() <= 0) {
+		NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> There are no nodes in the area of interest, sending error");
 		CreateAndSendError(requestHeader);
 		return;
 	}
@@ -104,6 +104,7 @@ void CentralApplication::ReceiveRequest(Ptr<Packet> packet) {
 }
 
 std::list<uint> CentralApplication::FilterNodesByDistance(SearchRequestHeader request) {
+	NS_LOG_FUNCTION(this << request);
 	std::list<uint> nodes;
 	POSITION nodePosition;
 	POSITION requestPosition = request.GetRequestPosition();
@@ -111,94 +112,109 @@ std::list<uint> CentralApplication::FilterNodesByDistance(SearchRequestHeader re
 	pthread_mutex_lock(&mutex);
 	for(std::map<uint, POSITION>::iterator i = positions.begin(); i != positions.end(); i++) {
 		nodePosition = i->second;
-		double distance = positionManager->CalculateDistanceFromTo(nodePosition, requestPosition);
+		double distance = PositionApplication::CalculateDistanceFromTo(nodePosition, requestPosition);
 		if(distance <= requestDistance) {
 			nodes.push_back(i->first);
 		}
 	}
 	pthread_mutex_unlock(&mutex);
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> There are " << nodes.size() << " nodes in the area of interest");
 	return nodes;
 }
 
 uint CentralApplication::GetBestNode(std::list<uint> nodes, SearchRequestHeader request) {
+	NS_LOG_FUNCTION(this << &nodes << request);
 	uint bestNode = 0;
 	OFFERED_SERVICE bestOfferedService;
 	std::list<std::string> offeredServices;
 	int minSemanticDistance = std::numeric_limits<int>::max();
 	std::string requestedService = request.GetRequestedService();
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Searching best node to provide service " << requestedService);
 	pthread_mutex_lock(&mutex);
 	for(std::list<uint>::iterator i = nodes.begin(); i != nodes.end(); i++) {
 		offeredServices = services[*i];
-		bestOfferedService = ontologyManager->GetBestOfferedService(requestedService, offeredServices);
+		bestOfferedService = OntologyApplication::GetBestOfferedService(requestedService, offeredServices);
 		if(bestOfferedService.semanticDistance < minSemanticDistance) {
 			bestNode = *i;
 			minSemanticDistance = bestOfferedService.semanticDistance;
 		}
 	}
 	pthread_mutex_unlock(&mutex);
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Best node to provide service " << requestedService << " is " << bestNode << " providing service " << bestOfferedService.service << " with semantic distance " << minSemanticDistance);
 	return bestNode;
 }
 
 void CentralApplication::ReceiveNotification(Ptr<Packet> packet) {
+	NS_LOG_FUNCTION(this << packet);
 	SearchNotificationHeader notificationHeader;
 	packet->RemoveHeader(notificationHeader);
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Received notification: " << notificationHeader);
 	uint node = notificationHeader.GetNodeAddress().Get();
 	pthread_mutex_lock(&mutex);
 	services[node] = notificationHeader.GetOfferedServices();
 	positions[node] = notificationHeader.GetCurrentPosition();
 	pthread_mutex_unlock(&mutex);
-	//std::cout << notificationHeader << std::endl;
 }
 
 void CentralApplication::SendError(SearchErrorHeader errorHeader) {
+	NS_LOG_FUNCTION(this << errorHeader);
 	Ptr<Packet> packet = Create<Packet>();
 	packet->AddHeader(errorHeader);
 	TypeHeader typeHeader(STRATOS_SEARCH_ERROR);
 	packet->AddHeader(typeHeader);
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Schedule error to send");
 	Simulator::Schedule(Seconds(Utilities::GetJitter()), &CentralApplication::SendUnicastMessage, this, packet, errorHeader.GetRequestAddress().Get());
 }
 
 void CentralApplication::CreateAndSendError(SearchRequestHeader request) {
+	NS_LOG_FUNCTION(this << request);
 	SendError(CreateError(request));
 }
 
 SearchErrorHeader CentralApplication::CreateError(SearchRequestHeader request) {
+	NS_LOG_FUNCTION(this << request);
 	SearchErrorHeader error;
 	error.SetRequestAddress(request.GetRequestAddress());
 	error.SetRequestTimestamp(request.GetRequestTimestamp());
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Error created: " << error);
 	return error;
 }
 
 void CentralApplication::SendResponse(SearchResponseHeader responseHeader) {
+	NS_LOG_FUNCTION(this << responseHeader);
 	Ptr<Packet> packet = Create<Packet>();
 	packet->AddHeader(responseHeader);
 	TypeHeader typeHeader(STRATOS_SEARCH_RESPONSE);
 	packet->AddHeader(typeHeader);
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Schedule response to send");
 	Simulator::Schedule(Seconds(Utilities::GetJitter()), &CentralApplication::SendUnicastMessage, this, packet, responseHeader.GetRequestAddress().Get());
 }
 
 void CentralApplication::CreateAndSendResponse(uint node, SearchRequestHeader request) {
+	NS_LOG_FUNCTION(this << node << request);
 	SendResponse(CreateResponse(node, request));
 }
 
 SearchResponseHeader CentralApplication::CreateResponse(uint node, SearchRequestHeader request) {
+	NS_LOG_FUNCTION(this << node << request);
 	POSITION requester = request.GetRequestPosition();
 	pthread_mutex_lock(&mutex);
 	POSITION me = positions[node];
 	pthread_mutex_unlock(&mutex);
-	double distance = positionManager->CalculateDistanceFromTo(requester, me);
+	double distance = PositionApplication::CalculateDistanceFromTo(requester, me);
 	SearchResponseHeader response;
 	response.SetDistance(distance);
 	response.SetResponseAddress(Ipv4Address(node));
-	//response.SetHopDistance(request.GetCurrentHops());
 	response.SetRequestAddress(request.GetRequestAddress());
 	response.SetRequestTimestamp(request.GetRequestTimestamp());
 	pthread_mutex_lock(&mutex);
-	response.SetOfferedService(ontologyManager->GetBestOfferedService(request.GetRequestedService(), services[node]));
+	response.SetOfferedService(OntologyApplication::GetBestOfferedService(request.GetRequestedService(), services[node]));
 	pthread_mutex_unlock(&mutex);
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Response created: " << response);
 	return response;
 }
 
 CentralHelper::CentralHelper() {
+	NS_LOG_FUNCTION(this);
 	objectFactory.SetTypeId("CentralApplication");
 }

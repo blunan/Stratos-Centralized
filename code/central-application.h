@@ -9,8 +9,6 @@
 #include "definitions.h"
 #include "application-helper.h"
 #include "search-error-header.h"
-#include "position-application.h"
-#include "ontology-application.h"
 #include "search-request-header.h"
 #include "search-response-header.h"
 #include "search-notification-header.h"
@@ -39,9 +37,7 @@ class CentralApplication : public Application {
 		std::map<uint, std::list<std::string> > services;
 
 		Ptr<Socket> socket;
-		Ptr<PositionApplication> positionManager;
-		Ptr<OntologyApplication> ontologyManager;
-		
+
 		void ReceiveMessage(Ptr<Socket> socket);
 		void SendUnicastMessage(Ptr<Packet> packet, uint destinationAddress);
 
@@ -50,7 +46,7 @@ class CentralApplication : public Application {
 		uint GetBestNode(std::list<uint> nodes, SearchRequestHeader request);
 
 		void ReceiveNotification(Ptr<Packet> packet);
-		
+
 		void SendError(SearchErrorHeader errorHeader);
 		void CreateAndSendError(SearchRequestHeader request);
 		SearchErrorHeader CreateError(SearchRequestHeader request);
