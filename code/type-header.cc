@@ -41,6 +41,9 @@ void TypeHeader::Print(std::ostream &stream) const {
 		case STRATOS_SEARCH_NOTIFICATION:
 			stream << "Search Notification Message";
 			break;
+		case STRATOS_SEARCH_SCHEDULE:
+			stream << "Search Schedule Message";
+			break
 		default:
 			stream << "Unknown Message";
 	}
