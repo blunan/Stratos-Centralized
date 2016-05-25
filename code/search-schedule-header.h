@@ -5,6 +5,7 @@
 #include "ns3/internet-module.h"
 
 #include "definitions.h"
+#include "search-response-header.h"
 
 using namespace ns3;
 

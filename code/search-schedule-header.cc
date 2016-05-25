@@ -1,5 +1,7 @@
 #include "search-schedule-header.h"
 
+#include "ns3/address-utils.h"
+
 #include "utilities.h"
 
 TypeId SearchScheduleHeader::GetTypeId() {
@@ -39,7 +41,7 @@ void SearchScheduleHeader::Serialize(Buffer::Iterator serializer) const {
 	WriteTo(serializer, requestAddress);
 	serializer.WriteU32(requestTimestamp);
 	serializer.WriteU16(schedule.size());
-	for(std::list<SearchResponseHeader>::iterator i = list.begin(); i != list.end(); i++) {
+	for(std::list<SearchResponseHeader>::const_iterator i = schedule.begin(); i != schedule.end(); i++) {
 		(*i).Serialize(serializer);
 	}
 }
@@ -71,10 +73,10 @@ void SearchScheduleHeader::SetRequestAddress(Ipv4Address requestAddress) {
 	this->requestAddress = requestAddress;
 }
 
-void SearchScheduleHeader::SetResponseAddress(std::list<SearchResponseHeader> schedule) {
+void SearchScheduleHeader::SetSchedule(std::list<SearchResponseHeader> schedule) {
 	serializedScheduleSize = 0;
 	this->schedule = schedule;
-	for(std::list<SearchResponseHeader>::iterator i = list.begin(); i != list.end(); i++) {
+	for(std::list<SearchResponseHeader>::iterator i = schedule.begin(); i != schedule.end(); i++) {
 		serializedScheduleSize += (*i).GetSerializedSize();
 	}
 }
