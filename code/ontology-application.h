@@ -10,7 +10,7 @@ class OntologyApplication : public Application {
 
 	public:
 		static TypeId GetTypeId();
-		
+
 		OntologyApplication();
 		~OntologyApplication();
 
@@ -29,15 +29,16 @@ class OntologyApplication : public Application {
 		int NUMBER_OF_SERVICES_OFFERED;
 		std::list<std::string> offeredServices;
 
-		std::string GetCommonPrefix(std::string c1, std::string c2);
-		int SemanticDistance(std::string requiredService, std::string offeredService);
+		static int SemanticDistance(std::string requiredService, std::string offeredService);
+		static std::string GetCommonPrefix(std::string requiredService, std::string offeredService);
 
 	public:
 		static std::string GetRandomService();
+		static OFFERED_SERVICE GetBestOfferedService(std::string requiredService, std::list<std::string> offeredServices);
 
+		bool DoIProvideService(std::string service);
 		std::list<std::string> GetOfferedServices();
 		OFFERED_SERVICE GetBestOfferedService(std::string requiredService);
-		OFFERED_SERVICE GetBestOfferedService(std::string requiredService, std::list<std::string> offeredServices);
 };
 
 class OntologyHelper : public ApplicationHelper {

@@ -6,11 +6,12 @@
 #include <map>
 
 #include "application-helper.h"
-#include "search-error-header.h"
 #include "service-application.h"
+#include "search-error-header.h"
 #include "results-application.h"
 #include "position-application.h"
 #include "ontology-application.h"
+#include "schedule-application.h"
 #include "search-request-header.h"
 #include "search-response-header.h"
 #include "search-notification-header.h"
@@ -47,7 +48,8 @@ class SearchApplication : public Application {
 		Ptr<ServiceApplication> serviceManager;
 		Ptr<PositionApplication> positionManager;
 		Ptr<OntologyApplication> ontologyManager;
-		
+		Ptr<ScheduleApplication> scheduleManager;
+
 		void ReceiveMessage(Ptr<Socket> socket);
 		void SendUnicastMessage(Ptr<Packet> packet, uint destinationAddress);
 
