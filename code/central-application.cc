@@ -99,8 +99,12 @@ void CentralApplication::ReceiveRequest(Ptr<Packet> packet) {
 		CreateAndSendError(requestHeader);
 		return;
 	}
-	uint bestNode = GetBestNode(nodes, requestHeader);
-	CreateAndSendResponse(bestNode, requestHeader);
+	std::list<uint> scheduleNodes = GetScheduleNodes(nodes, requestHeader);
+	if(!scheduleNodes.empty()) {
+		CreateAndSendResponse(scheduleNodes, requestHeader);
+	} else {
+		CreateAndSendError(requestHeader);
+	}
 }
 
 std::list<uint> CentralApplication::FilterNodesByDistance(SearchRequestHeader request) {
@@ -122,26 +126,29 @@ std::list<uint> CentralApplication::FilterNodesByDistance(SearchRequestHeader re
 	return nodes;
 }
 
-uint CentralApplication::GetBestNode(std::list<uint> nodes, SearchRequestHeader request) {
+std::list<uint> CentralApplication::GetScheduleNodes(std::list<uint> nodes, SearchRequestHeader request) {
 	NS_LOG_FUNCTION(this << &nodes << request);
-	uint bestNode = 0;
+	std::list<uint> bestNodes;
 	OFFERED_SERVICE bestOfferedService;
 	std::list<std::string> offeredServices;
-	int minSemanticDistance = std::numeric_limits<int>::max();
 	std::string requestedService = request.GetRequestedService();
-	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Searching best node to provide service " << requestedService);
-	pthread_mutex_lock(&mutex);
-	for(std::list<uint>::iterator i = nodes.begin(); i != nodes.end(); i++) {
-		offeredServices = services[*i];
-		bestOfferedService = OntologyApplication::GetBestOfferedService(requestedService, offeredServices);
-		if(bestOfferedService.semanticDistance < minSemanticDistance) {
-			bestNode = *i;
-			minSemanticDistance = bestOfferedService.semanticDistance;
+	while(!nodes.empty() && bestNodes.size() < MAX_SCHEDULE_SIZE) {
+		std::list<uint>::iterator bestNode = nodes.begin();
+		int minSemanticDistance = std::numeric_limits<int>::max();
+		NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Searching best node to provide service " << requestedService);
+		for(std::list<uint>::iterator i = nodes.begin(); i != nodes.end(); i++) {
+			offeredServices = services[*i];
+			bestOfferedService = OntologyApplication::GetBestOfferedService(requestedService, offeredServices);
+			if(bestOfferedService.semanticDistance < minSemanticDistance) {
+				bestNode = i;
+				minSemanticDistance = bestOfferedService.semanticDistance;
+			}
 		}
+		NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Best node to provide service " << requestedService << " is " << *bestNode << " providing service " << bestOfferedService.service << " with semantic distance " << minSemanticDistance);
+		bestNodes.push_back(*bestNode);
+		nodes.erase(bestNode);
 	}
-	pthread_mutex_unlock(&mutex);
-	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Best node to provide service " << requestedService << " is " << bestNode << " providing service " << bestOfferedService.service << " with semantic distance " << minSemanticDistance);
-	return bestNode;
+	return bestNodes;
 }
 
 void CentralApplication::ReceiveNotification(Ptr<Packet> packet) {
@@ -180,19 +187,14 @@ SearchErrorHeader CentralApplication::CreateError(SearchRequestHeader request) {
 	return error;
 }
 
-void CentralApplication::SendResponse(SearchResponseHeader responseHeader) {
-	NS_LOG_FUNCTION(this << responseHeader);
+void CentralApplication::SendResponse(SearchScheduleHeader scheduleHeader) {
+	NS_LOG_FUNCTION(this << scheduleHeader);
 	Ptr<Packet> packet = Create<Packet>();
-	packet->AddHeader(responseHeader);
+	packet->AddHeader(scheduleHeader);
 	TypeHeader typeHeader(STRATOS_SEARCH_RESPONSE);
 	packet->AddHeader(typeHeader);
 	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Schedule response to send");
-	Simulator::Schedule(Seconds(Utilities::GetJitter()), &CentralApplication::SendUnicastMessage, this, packet, responseHeader.GetRequestAddress().Get());
-}
-
-void CentralApplication::CreateAndSendResponse(uint node, SearchRequestHeader request) {
-	NS_LOG_FUNCTION(this << node << request);
-	SendResponse(CreateResponse(node, request));
+	Simulator::Schedule(Seconds(Utilities::GetJitter()), &CentralApplication::SendUnicastMessage, this, packet, scheduleHeader.GetRequestAddress().Get());
 }
 
 SearchResponseHeader CentralApplication::CreateResponse(uint node, SearchRequestHeader request) {
@@ -212,6 +214,25 @@ SearchResponseHeader CentralApplication::CreateResponse(uint node, SearchRequest
 	pthread_mutex_unlock(&mutex);
 	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Response created: " << response);
 	return response;
+}
+
+void CentralApplication::CreateAndSendResponse(std::list<uint> scheduleNodes, SearchRequestHeader request) {
+	NS_LOG_FUNCTION(this << &scheduleNodes << request);
+	SendResponse(CreateResponse(scheduleNodes, request));
+}
+
+SearchScheduleHeader CentralApplication::CreateResponse(std::list<uint> scheduleNodes, SearchRequestHeader request) {
+	NS_LOG_FUNCTION(this << &scheduleNodes << request);
+	SearchScheduleHeader scheduleResponse;
+	scheduleResponse.SetRequestAddress(request.GetRequestAddress());
+	scheduleResponse.SetRequestTimestamp(request.GetRequestTimestamp());
+	std::list<SearchResponseHeader> schedule;
+	for(std::list<uint>::iterator i = scheduleNodes.begin(); i != scheduleNodes.end(); i++) {
+		schedule.push_back(CreateResponse((*i), request));
+	}
+	scheduleResponse.SetSchedule(schedule);
+	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Schedule response created: " << scheduleResponse);
+	return scheduleResponse;
 }
 
 CentralHelper::CentralHelper() {

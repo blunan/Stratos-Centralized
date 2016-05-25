@@ -190,21 +190,19 @@ void SearchApplication::RetryRequest(Ptr<Packet> packet, int nTry, std::pair<uin
 
 void SearchApplication::ReceiveResponse(Ptr<Packet> packet) {
 	NS_LOG_FUNCTION(this << packet);
-	SearchResponseHeader responseHeader;
-	packet->RemoveHeader(responseHeader);
-	NS_LOG_DEBUG(localAddress << " -> Received response: " << responseHeader);
-	Simulator::Cancel(timers[GetRequestKey(responseHeader)]);
+	SearchScheduleHeader scheduleHeader;
+	packet->RemoveHeader(scheduleHeader);
+	NS_LOG_DEBUG(localAddress << " -> Received response: " << scheduleHeader);
+	Simulator::Cancel(timers[GetRequestKey(scheduleHeader)]);
 	if(!response) {
 		response = true;
 		NS_LOG_DEBUG(localAddress << " -> Starting service for request");
-		std::list<SearchResponseHeader> responses;
-		responses.push_back(responseHeader);
+		std::list<SearchResponseHeader> responses = scheduleHeader.GetSchedule();
 		scheduleManager->CreateAndExecuteSchedule(responses);
-		resultsManager->SetResponseSemanticDistance(responseHeader.GetOfferedService().semanticDistance);
 	}
 }
 
-std::pair<uint, double> SearchApplication::GetRequestKey(SearchResponseHeader response) {
+std::pair<uint, double> SearchApplication::GetRequestKey(SearchScheduleHeader response) {
 	NS_LOG_FUNCTION(this << response);
 	uint address = response.GetRequestAddress().Get();
 	double timestamp = response.GetRequestTimestamp();

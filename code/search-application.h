@@ -14,6 +14,7 @@
 #include "schedule-application.h"
 #include "search-request-header.h"
 #include "search-response-header.h"
+#include "search-schedule-header.h"
 #include "search-notification-header.h"
 
 using namespace ns3;
@@ -64,7 +65,7 @@ class SearchApplication : public Application {
 		std::pair<uint, double> GetRequestKey(SearchErrorHeader error);
 
 		void ReceiveResponse(Ptr<Packet> packet);
-		std::pair<uint, double> GetRequestKey(SearchResponseHeader response);
+		std::pair<uint, double> GetRequestKey(SearchScheduleHeader response);
 
 		void CreateAndSendNotification();
 		SearchNotificationHeader CreateNotification();

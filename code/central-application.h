@@ -11,6 +11,7 @@
 #include "search-error-header.h"
 #include "search-request-header.h"
 #include "search-response-header.h"
+#include "search-schedule-header.h"
 #include "search-notification-header.h"
 
 using namespace ns3;
@@ -43,7 +44,7 @@ class CentralApplication : public Application {
 
 		void ReceiveRequest(Ptr<Packet> packet);
 		std::list<uint> FilterNodesByDistance(SearchRequestHeader request);
-		uint GetBestNode(std::list<uint> nodes, SearchRequestHeader request);
+		std::list<uint> GetScheduleNodes(std::list<uint> nodes, SearchRequestHeader request);
 
 		void ReceiveNotification(Ptr<Packet> packet);
 
@@ -51,9 +52,10 @@ class CentralApplication : public Application {
 		void CreateAndSendError(SearchRequestHeader request);
 		SearchErrorHeader CreateError(SearchRequestHeader request);
 
-		void SendResponse(SearchResponseHeader responseHeader);
-		void CreateAndSendResponse(uint node, SearchRequestHeader request);
+		void SendResponse(SearchScheduleHeader scheduleHeader);
 		SearchResponseHeader CreateResponse(uint node, SearchRequestHeader request);
+		void CreateAndSendResponse(std::list<uint> scheduleNodes, SearchRequestHeader request);
+		SearchScheduleHeader CreateResponse(std::list<uint> scheduleNodes, SearchRequestHeader request);
 };
 
 class CentralHelper : public ApplicationHelper {
