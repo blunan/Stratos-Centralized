@@ -137,7 +137,9 @@ std::list<uint> CentralApplication::GetScheduleNodes(std::list<uint> nodes, Sear
 		int minSemanticDistance = std::numeric_limits<int>::max();
 		NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Searching best node to provide service " << requestedService);
 		for(std::list<uint>::iterator i = nodes.begin(); i != nodes.end(); i++) {
+			pthread_mutex_lock(&mutex);
 			offeredServices = services[*i];
+			pthread_mutex_unlock(&mutex);
 			bestOfferedService = OntologyApplication::GetBestOfferedService(requestedService, offeredServices);
 			if(bestOfferedService.semanticDistance < minSemanticDistance) {
 				bestNode = i;
@@ -199,19 +201,17 @@ void CentralApplication::SendResponse(SearchScheduleHeader scheduleHeader) {
 
 SearchResponseHeader CentralApplication::CreateResponse(uint node, SearchRequestHeader request) {
 	NS_LOG_FUNCTION(this << node << request);
-	POSITION requester = request.GetRequestPosition();
 	pthread_mutex_lock(&mutex);
-	POSITION me = positions[node];
+	POSITION nodePosition = positions[node];
+	std::list<std::string> nodeServices = services[node];
 	pthread_mutex_unlock(&mutex);
-	double distance = PositionApplication::CalculateDistanceFromTo(requester, me);
+	POSITION requesterPosition = request.GetRequestPosition();
 	SearchResponseHeader response;
-	response.SetDistance(distance);
 	response.SetResponseAddress(Ipv4Address(node));
 	response.SetRequestAddress(request.GetRequestAddress());
 	response.SetRequestTimestamp(request.GetRequestTimestamp());
-	pthread_mutex_lock(&mutex);
-	response.SetOfferedService(OntologyApplication::GetBestOfferedService(request.GetRequestedService(), services[node]));
-	pthread_mutex_unlock(&mutex);
+	response.SetDistance(PositionApplication::CalculateDistanceFromTo(requesterPosition, nodePosition));
+	response.SetOfferedService(OntologyApplication::GetBestOfferedService(request.GetRequestedService(), nodeServices));
 	NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Response created: " << response);
 	return response;
 }
