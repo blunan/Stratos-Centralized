@@ -30,7 +30,7 @@ CXXFLAGS="-O3 -w" ./waf -d optimized configure --enable-static
 # Build once
 ./waf --run stratos_centralized
 
-for i in {1..4}
+for i in {1..100}
 do
 	./waf --run "stratos_centralized --nMobile=0" >> stratos/centralized_mobile_0.txt
 	./waf --run "stratos_centralized --nMobile=25" >> stratos/centralized_mobile_25.txt
