@@ -4,23 +4,19 @@
 #include <string>
 #include <sys/types.h>
 
-//#define MIN_HOPS 3
-
-//#define MAX_HOPS 4
-
 #define MAX_TRIES 2
 
-#define HELLO_TIME 3 //seconds
+#define HELLO_TIME 2 //seconds
 
 #define MIN_JITTER 0.001 //1ms
 
 #define MAX_JITTER 0.01 //10ms
 
-#define HELLO_PORT 1199
+#define HELLO_PORT 60000
 
-#define SEARCH_PORT 1198
+#define SEARCH_PORT 60001
 
-#define SERVICE_PORT 1197
+#define SERVICE_PORT 60002
 
 #define MAX_DISTANCE 1000 //meters
 
@@ -28,7 +24,7 @@
 
 #define MAX_REQUEST_TIME 50 //seconds
 
-//#define PACKET_SEND_DELAY 500 //ms
+#define MAX_SCHEDULE_SIZE 3
 
 #define MIN_REQUEST_DISTANCE 400
 
@@ -40,29 +36,30 @@
 
 #define TOTAL_NUMBER_OF_NODES 100
 
-typedef struct {
+struct POSITION {
 	double x;
 	double y;
-} POSITION;
+};
 
-typedef struct {
+struct NEIGHBOR {
 	uint address;
 	double lastSeen;
-} NEIGHBOR;
+};
 
-typedef struct {
+struct OFFERED_SERVICE {
 	std::string service;
 	int semanticDistance;
-} OFFERED_SERVICE;
+};
 
 enum MessageType {
 	STRATOS = 0,
-	STRATOS_HELLO = 1,
-	STRATOS_SEARCH_REQUEST = 2,
-	STRATOS_SEARCH_RESPONSE = 3,
-	STRATOS_SEARCH_ERROR = 4,
-	STRATOS_SERVICE_REQUEST = 5,
-	STRATOS_SERVICE_RESPONSE = 6,
+	STRATOS_SEARCH_REQUEST = 1,
+	STRATOS_SEARCH_RESPONSE = 2,
+	STRATOS_SEARCH_ERROR = 3,
+	STRATOS_SERVICE_REQUEST = 4,
+	STRATOS_SERVICE_RESPONSE = 5,
+	STRATOS_SERVICE_ERROR = 6,
+	STRATOS_SEARCH_NOTIFICATION = 7
 };
 
 enum Flag {

@@ -36,6 +36,7 @@ void SearchApplication::DoInitialize() {
 	resultsManager = DynamicCast<ResultsApplication>(GetNode()->GetApplication(4));
 	ontologyManager = DynamicCast<OntologyApplication>(GetNode()->GetApplication(0));
 	positionManager = DynamicCast<PositionApplication>(GetNode()->GetApplication(1));
+	scheduleManager = DynamicCast<ScheduleApplication>(GetNode()->GetApplication(5));
 	socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 	socket->SetAllowBroadcast(false);
 	localAddress = GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal();
@@ -63,6 +64,28 @@ void SearchApplication::StopApplication() {
 	if(socket != NULL) {
 		socket->SetRecvCallback(MakeNullCallback<void, Ptr<Socket> >());
 	}
+}
+
+SearchResponseHeader SearchApplication::SelectBestResponse(std::list<SearchResponseHeader> responses) {
+	NS_LOG_FUNCTION(&responses);
+	SearchResponseHeader response;
+	SearchResponseHeader bestResponse = responses.front();
+	responses.pop_front();
+	std::list<SearchResponseHeader>::iterator i;
+	NS_LOG_DEBUG("Best response is: " << bestResponse);
+	for(i = responses.begin(); i != responses.end(); i++) {
+		response = *i;
+		if(response.GetOfferedService().semanticDistance < bestResponse.GetOfferedService().semanticDistance) {
+			bestResponse = response;
+			NS_LOG_DEBUG("New best response selected by semantic distance: " << bestResponse);
+		} else if(response.GetOfferedService().semanticDistance == bestResponse.GetOfferedService().semanticDistance) {
+			if(response.GetResponseAddress() < bestResponse.GetResponseAddress()) {
+				bestResponse = response;
+				NS_LOG_DEBUG("New best response selected by address: " << bestResponse);
+			}
+		}
+	}
+	return bestResponse;
 }
 
 void SearchApplication::CreateAndSendRequest() {
@@ -144,7 +167,7 @@ void SearchApplication::ReceiveError(Ptr<Packet> packet) {
 	SearchErrorHeader errorHeader;
 	packet->RemoveHeader(errorHeader);
 	Simulator::Cancel(timers[GetRequestKey(errorHeader)]);
-	NS_LOG_DEBUG(localAddress << " -> There is no response for request: " <<  << errorHeader);
+	NS_LOG_DEBUG(localAddress << " -> There is no response for request: " << errorHeader);
 }
 
 std::pair<uint, double> SearchApplication::GetRequestKey(SearchErrorHeader error) {
@@ -160,25 +183,26 @@ void SearchApplication::RetryRequest(Ptr<Packet> packet, int nTry, std::pair<uin
 	if (nTry <= MAX_TRIES) {
 		NS_LOG_DEBUG(localAddress << " -> Retrying request (" << nTry << ")");
 		Simulator::Schedule(Seconds(Utilities::GetJitter()), &SearchApplication::SendUnicastMessage, this, packet, centralServerAddress);
+		NS_LOG_DEBUG(localAddress << " -> Schedule next retry");
 		timers[key] = Simulator::Schedule(Seconds(MAX_RESPONSE_WAIT_TIME + Utilities::GetJitter()), &SearchApplication::RetryRequest, this, packet, ++nTry, key);
 	}
 }
 
 void SearchApplication::ReceiveResponse(Ptr<Packet> packet) {
 	NS_LOG_FUNCTION(this << packet);
-	SearchResponseHeader responseHeader;
-	packet->RemoveHeader(responseHeader);
-	NS_LOG_DEBUG(localAddress << " -> Received response: " << responseHeader);
-	Simulator::Cancel(timers[GetRequestKey(responseHeader)]);
+	SearchScheduleHeader scheduleHeader;
+	packet->RemoveHeader(scheduleHeader);
+	NS_LOG_DEBUG(localAddress << " -> Received response: " << scheduleHeader);
+	Simulator::Cancel(timers[GetRequestKey(scheduleHeader)]);
 	if(!response) {
 		response = true;
 		NS_LOG_DEBUG(localAddress << " -> Starting service for request");
-		serviceManager->CreateAndSendRequest(responseHeader.GetResponseAddress(), responseHeader.GetOfferedService().service);
-		resultsManager->SetResponseSemanticDistance(responseHeader.GetOfferedService().semanticDistance);
+		std::list<SearchResponseHeader> responses = scheduleHeader.GetSchedule();
+		scheduleManager->CreateAndExecuteSchedule(responses);
 	}
 }
 
-std::pair<uint, double> SearchApplication::GetRequestKey(SearchResponseHeader response) {
+std::pair<uint, double> SearchApplication::GetRequestKey(SearchScheduleHeader response) {
 	NS_LOG_FUNCTION(this << response);
 	uint address = response.GetRequestAddress().Get();
 	double timestamp = response.GetRequestTimestamp();
@@ -192,22 +216,24 @@ void SearchApplication::CreateAndSendNotification() {
 }
 
 SearchNotificationHeader SearchApplication::CreateNotification() {
-	NS_LOG_FUNCTION(this);
+	//NS_LOG_FUNCTION(this);
 	SearchNotificationHeader notification;
 	notification.SetNodeAddress(localAddress);
 	notification.SetCurrentPosition(positionManager->GetCurrentPosition());
 	notification.SetOfferedServices(ontologyManager->GetOfferedServices());
-	NS_LOG_DEBUG(localAddress << " -> Notification created: " << notification);
+	//NS_LOG_DEBUG(localAddress << " -> Notification created: " << notification);
 	return notification;
 }
 
 void SearchApplication::SendNotification(SearchNotificationHeader notificationHeader) {
-	NS_LOG_FUNCTION(this << notificationHeader);
+	//NS_LOG_FUNCTION(this << notificationHeader);
+	Ptr<Packet> packet = Create<Packet>();
 	packet->AddHeader(notificationHeader);
 	TypeHeader typeHeader(STRATOS_SEARCH_NOTIFICATION);
-	NS_LOG_DEBUG(localAddress << " -> Schedule notification to send");
+	packet->AddHeader(typeHeader);
+	//NS_LOG_DEBUG(localAddress << " -> Schedule notification to send");
 	Simulator::Schedule(Seconds(Utilities::GetJitter()), &SearchApplication::SendUnicastMessage, this, packet, centralServerAddress);
-	NS_LOG_DEBUG(localAddress << " -> Schedule next notification");
+	//NS_LOG_DEBUG(localAddress << " -> Schedule next notification");
 	Simulator::Schedule(Seconds(HELLO_TIME + Utilities::Random(0, HELLO_TIME)), &SearchApplication::SendNotification, this, notificationHeader);
 }
 
