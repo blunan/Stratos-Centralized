@@ -20,7 +20,12 @@ uint32_t SearchScheduleHeader::GetSerializedSize() const {
 }
 
 void SearchScheduleHeader::Print(std::ostream &stream) const {
-	stream << "Search schedule response to " << requestAddress << " at " << requestTimestamp << " with " << schedule.size() << " nodes in schedule";
+	stream << "Search schedule response to " << requestAddress << " at " << requestTimestamp << " with " << schedule.size() << " nodes in schedule {";
+	for(std::list<SearchResponseHeader>::const_iterator i = schedule.begin(); i != schedule.end(); i++) {
+		(*i).Print(stream);
+		stream << " -- ";
+	}
+	stream << "}";
 }
 
 uint32_t SearchScheduleHeader::Deserialize(Buffer::Iterator start) {
@@ -31,6 +36,7 @@ uint32_t SearchScheduleHeader::Deserialize(Buffer::Iterator start) {
 	for(int j = 0; j < scheduleSize; j++) {
 		SearchResponseHeader response;
 		serializedScheduleSize += response.Deserialize(i);
+		i.Next(response.GetSerializedSize());
 		schedule.push_back(response);
 	}
 	uint32_t size = i.GetDistanceFrom(start);
@@ -43,6 +49,7 @@ void SearchScheduleHeader::Serialize(Buffer::Iterator serializer) const {
 	serializer.WriteU16(schedule.size());
 	for(std::list<SearchResponseHeader>::const_iterator i = schedule.begin(); i != schedule.end(); i++) {
 		(*i).Serialize(serializer);
+		serializer.Next((*i).GetSerializedSize());
 	}
 }
 
