@@ -115,10 +115,12 @@ std::list<uint> CentralApplication::FilterNodesByDistance(SearchRequestHeader re
 	double requestDistance = request.GetMaxDistanceAllowed();
 	pthread_mutex_lock(&mutex);
 	for(std::map<uint, POSITION>::iterator i = positions.begin(); i != positions.end(); i++) {
-		nodePosition = i->second;
-		double distance = PositionApplication::CalculateDistanceFromTo(nodePosition, requestPosition);
-		if(distance <= requestDistance) {
-			nodes.push_back(i->first);
+		if(i->first != request.GetRequestAddress().Get()) {
+			nodePosition = i->second;
+			double distance = PositionApplication::CalculateDistanceFromTo(nodePosition, requestPosition);
+			if(distance <= requestDistance) {
+				nodes.push_back(i->first);
+			}
 		}
 	}
 	pthread_mutex_unlock(&mutex);
