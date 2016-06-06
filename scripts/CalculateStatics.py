@@ -44,7 +44,7 @@ def CalculateStatics(resultsFile, nPackets = 10, nRequesters = 4) :
 					aux = timesSum / nTimes
 					totAvgTime += aux
 					avgTimes.append(aux)
-					aux = int(line) / (packetsSum * 256)
+					aux = float(line) / (packetsSum * 256)
 					totAvgControlOverhead += aux
 					avgControlOverheads.append(aux)
 					aux = (packetsSum * 100) / (nPackets * nTimes)
