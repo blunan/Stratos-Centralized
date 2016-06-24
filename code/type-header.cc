@@ -17,8 +17,8 @@ uint32_t TypeHeader::GetSerializedSize() const {
 
 void TypeHeader::Print(std::ostream &stream) const {
 	switch(messageType) {
-		case STRATOS_HELLO:
-			stream << "Hello Message";
+		case STRATOS:
+			stream << "Default header type";
 			break;
 		case STRATOS_SEARCH_REQUEST:
 			stream << "Search Request Message";
@@ -51,7 +51,7 @@ uint32_t TypeHeader::Deserialize(Buffer::Iterator start) {
 	uint8_t messageType = i.ReadU8();
 	this->isValid = true;
 	switch(messageType) {
-		case STRATOS_HELLO:
+		case STRATOS:
 		case STRATOS_SEARCH_REQUEST:
 		case STRATOS_SEARCH_RESPONSE:
 		case STRATOS_SEARCH_ERROR:

@@ -1,14 +1,15 @@
-#ifndef SEARCH_REQUEST_HEADER_H
-#define SEARCH_REQUEST_HEADER_H
+#ifndef SEARCH_SCHEDULE_HEADER_H
+#define SEARCH_SCHEDULE_HEADER_H
 
 #include "ns3/header.h"
 #include "ns3/internet-module.h"
 
 #include "definitions.h"
+#include "search-response-header.h"
 
 using namespace ns3;
 
-class SearchRequestHeader : public Header {
+class SearchScheduleHeader : public Header {
 
 	public:
 		static TypeId GetTypeId();
@@ -19,29 +20,23 @@ class SearchRequestHeader : public Header {
 		virtual void Serialize(Buffer::Iterator serializer) const;
 
 	private:
-		int requestedServiceSize;
+		int serializedScheduleSize;
 
 		double requestTimestamp;
-		POSITION requestPosition;
-		double maxDistanceAllowed;
 		Ipv4Address requestAddress;
-		std::string requestedService;
+		std::list<SearchResponseHeader> schedule;
 
 	public:
-		SearchRequestHeader();
+		SearchScheduleHeader();
 
 		double GetRequestTimestamp();
-		POSITION GetRequestPosition();
-		double GetMaxDistanceAllowed();
 		Ipv4Address GetRequestAddress();
-		std::string GetRequestedService();
+		std::list<SearchResponseHeader> GetSchedule();
 
 		void SetRequestTimestamp(double requestTimestamp);
-		void SetRequestPosition(POSITION requestPosition);
 		void SetRequestAddress(Ipv4Address requestAddress);
-		void SetMaxDistanceAllowed(double maxDistanceAllowed);
-		void SetRequestedService(std::string requestedService);
+		void SetSchedule(std::list<SearchResponseHeader> schedule);
 };
-std::ostream & operator<< (std::ostream & stream, SearchRequestHeader const & requestHeader);
+std::ostream & operator<< (std::ostream & stream, SearchScheduleHeader const & scheduleHeader);
 
 #endif
