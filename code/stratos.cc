@@ -21,18 +21,21 @@ NS_LOG_COMPONENT_DEFINE("Stratos");
 
 Stratos::Stratos(int argc, char *argv[]) {
 	NS_LOG_FUNCTION(this);
+	MAX_SCHEDULE_SIZE = 3; // 1, 2, 3*, 4, 5
 	NUMBER_OF_MOBILE_NODES = 50; //0, 25, 50*, 100
 	NUMBER_OF_REQUESTER_NODES = 4; //1, 2, 4*, 8, 16, 24, 32
-	NUMBER_OF_PACKETS_TO_SEND = 10; //10*, 20, 40, 60
+	NUMBER_OF_PACKETS_TO_SEND = 20; //10, 20*, 40, 60
 	NUMBER_OF_SERVICES_OFFERED = 2; //1, 2*, 4, 8
 
 	NS_LOG_INFO("Parsing argument values if any");
 	CommandLine cmd;
+	cmd.AddValue("nSchedule", "Max number of nodes in a schedule.", MAX_SCHEDULE_SIZE);
 	cmd.AddValue("nMobile", "Number of mobile nodes.", NUMBER_OF_MOBILE_NODES);
 	cmd.AddValue("nRequesters", "Number of requester nodes.", NUMBER_OF_REQUESTER_NODES);
 	cmd.AddValue("nPackets", "Number of service packets to send.", NUMBER_OF_PACKETS_TO_SEND);
 	cmd.AddValue("nServices", "Number of services offered by a node.", NUMBER_OF_SERVICES_OFFERED);
 	cmd.Parse(argc, argv);
+	NS_LOG_INFO("Max schedule size = " << MAX_SCHEDULE_SIZE);
 	NS_LOG_INFO("Number of mobile nodes = " << NUMBER_OF_MOBILE_NODES);
 	NS_LOG_INFO("Number of requester nodes = " << NUMBER_OF_REQUESTER_NODES);
 	NS_LOG_INFO("Number of service packets to send = " << NUMBER_OF_PACKETS_TO_SEND);
@@ -130,7 +133,9 @@ void Stratos::InstallApplications() {
 	CentralHelper central;
 	applications.Add(central.Install(centralNode));
 	ScheduleHelper schedule;
+	schedule.SetAttribute("nSchedule", IntegerValue(MAX_SCHEDULE_SIZE));
 	applications.Add(schedule.Install(nodes));
+	applications.Add(schedule.Install(centralNode));
 	applications.Start(Seconds(1));
 	applications.Stop(Seconds(TOTAL_SIMULATION_TIME - 1));
 }
