@@ -32,7 +32,7 @@ CXXFLAGS="-O3 -w" ./waf configure --build-profile=optimized --enable-static
 # Build once
 ./waf --run stratos_centralized
 
-for i in {1..2}
+for i in {1..100}
 do
 	./waf --run "stratos_centralized --nSchedule=1" >> stratos/centralized_schedule_1.txt
  	./waf --run "stratos_centralized --nSchedule=2" >> stratos/centralized_schedule_2.txt
