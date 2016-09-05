@@ -136,7 +136,6 @@ void Stratos::InstallApplications() {
 	ScheduleHelper schedule;
 	schedule.SetAttribute("nSchedule", IntegerValue(MAX_SCHEDULE_SIZE));
 	applications.Add(schedule.Install(nodes));
-	applications.Add(schedule.Install(centralNode));
 	applications.Start(Seconds(1));
 	applications.Stop(Seconds(TOTAL_SIMULATION_TIME - 1));
 }
