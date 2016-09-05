@@ -9,7 +9,6 @@
 #include "definitions.h"
 #include "application-helper.h"
 #include "search-error-header.h"
-#include "schedule-application.h"
 #include "search-request-header.h"
 #include "search-response-header.h"
 #include "search-schedule-header.h"
@@ -34,9 +33,9 @@ class CentralApplication : public Application {
 		virtual void StopApplication();
 
 	private:
+		int MAX_SCHEDULE_SIZE;
 		pthread_mutex_t mutex;
 		std::map<uint, POSITION> positions;
-		Ptr<ScheduleApplication> scheduleManager;
 		std::map<uint, std::list<std::string> > services;
 
 		Ptr<Socket> socket;

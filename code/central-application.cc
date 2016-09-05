@@ -30,7 +30,6 @@ CentralApplication::~CentralApplication() {
 void CentralApplication::DoInitialize() {
 	NS_LOG_FUNCTION(this);
 	pthread_mutex_init(&mutex, NULL);
-	scheduleManager = DynamicCast<ScheduleApplication>(GetNode()->GetApplication(5));
 	socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 	socket->SetAllowBroadcast(false);
 	InetSocketAddress local = InetSocketAddress(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal(), SEARCH_PORT);
@@ -135,7 +134,7 @@ std::list<uint> CentralApplication::GetScheduleNodes(std::list<uint> nodes, Sear
 	OFFERED_SERVICE bestOfferedService;
 	std::list<std::string> offeredServices;
 	std::string requestedService = request.GetRequestedService();
-	while(!nodes.empty() && bestNodes.size() < scheduleManager->MAX_SCHEDULE_SIZE) {
+	while(!nodes.empty() && bestNodes.size() < MAX_SCHEDULE_SIZE) {
 		std::list<uint>::iterator bestNode = nodes.begin();
 		int minSemanticDistance = std::numeric_limits<int>::max();
 		NS_LOG_DEBUG(GetNode()->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " -> Searching best node to provide service " << requestedService);
