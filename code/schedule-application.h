@@ -42,6 +42,8 @@ class ScheduleApplication : public Application {
 		void CreateSchedule(std::list<SearchResponseHeader> responses);
 
 	public:
+		int MAX_SCHEDULE_SIZE;
+
 		void ContinueSchedule();
 		void CreateAndExecuteSchedule(std::list<SearchResponseHeader> responses);
 };

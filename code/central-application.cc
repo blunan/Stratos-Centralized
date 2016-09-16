@@ -15,7 +15,12 @@ TypeId CentralApplication::GetTypeId() {
 	NS_LOG_FUNCTION_NOARGS();
 	static TypeId typeId = TypeId("CentralApplication")
 		.SetParent<Application>()
-		.AddConstructor<CentralApplication>();
+		.AddConstructor<CentralApplication>()
+		.AddAttribute("nSchedule",
+ 						"Max number of nodes in a schedule.",
+ 						IntegerValue(3),
+ 						MakeIntegerAccessor(&CentralApplication::MAX_SCHEDULE_SIZE),
+ 						MakeIntegerChecker<int>());
 	return typeId;
 }
 

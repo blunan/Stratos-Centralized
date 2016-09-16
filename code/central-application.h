@@ -33,6 +33,7 @@ class CentralApplication : public Application {
 		virtual void StopApplication();
 
 	private:
+		int MAX_SCHEDULE_SIZE;
 		pthread_mutex_t mutex;
 		std::map<uint, POSITION> positions;
 		std::map<uint, std::list<std::string> > services;

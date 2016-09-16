@@ -24,8 +24,6 @@
 
 #define MAX_REQUEST_TIME 50 //seconds
 
-#define MAX_SCHEDULE_SIZE 3
-
 #define MIN_REQUEST_DISTANCE 400
 
 #define MAX_REQUEST_DISTANCE 600
